@@ -103,6 +103,8 @@ First run the notebook end-to-end to generate the saved files, then:
 ```bash
 streamlit run streamlit_app.py
 ```
+Or from this link directly:
+https://student-dropout-predictor-group8.streamlit.app/
 
 The app takes a student's details as input and returns a prediction with confidence scores for all three classes.
 
