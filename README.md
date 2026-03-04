@@ -3,6 +3,19 @@
 
 ---
 
+## Contributors
+
+- Rodina Mohamed Kamal Khallaf
+  https://www.linkedin.com/in/rodina-mohamed-kamal/
+
+---
+
+## Live App
+
+🔗 [student-dropout-predictor-group8.streamlit.app](https://student-dropout-predictor-group8.streamlit.app)
+
+---
+
 ## What is this?
 
 Every year, a significant number of students leave university without finishing their degree. This project tries to predict — early enough to actually help — whether a student will **drop out**, stay **enrolled**, or **graduate**.
@@ -103,8 +116,6 @@ First run the notebook end-to-end to generate the saved files, then:
 ```bash
 streamlit run streamlit_app.py
 ```
-Or from this link directly:
-https://student-dropout-predictor-group8.streamlit.app/
 
 The app takes a student's details as input and returns a prediction with confidence scores for all three classes.
 
