@@ -37,24 +37,19 @@ The features cover three areas: academic performance (units approved, grades), f
 
 ## How it works
 
-The pipeline follows these steps in order:
-
 **1. Clean the data** — removed 75 students labeled "Graduate" with zero approved units in both semesters. That's a data entry error, not an edge case.
 
-**2. Engineer features** — averaged the 12 correlated semester columns into 6 cleaner ones, then added three paper-grounded features:
+**2. Engineer features** — averaged the 12 correlated semester columns into 6 cleaner ones, then added four paper-grounded features:
 - `approval_rate` — units approved ÷ units enrolled (efficiency, not just volume)
 - `sem2_approved_raw` — 2nd semester approvals kept separate, because averaging hides a crash in sem2
 - `grade_trend` — sem2 grade minus sem1 grade, captures direction not just level
+- `failed_units` — enrolled minus approved, captures the effort-vs-outcome gap
 
-**3. Select features statistically** — Chi-Square for categoricals, Spearman correlation for numericals. Only kept features with a statistically significant relationship to the outcome.
+**3. Select features statistically** — Chi-Square + Cramér's V for categoricals, Spearman correlation for numericals. Only kept features with a statistically significant relationship to the outcome.
 
-**4. Train 7 models** — Logistic Regression, Decision Tree, Random Forest, SVM, MLP, XGBoost, LightGBM, CatBoost, AdaBoost, KNN. All with `class_weight='balanced'` to handle the imbalanced classes fairly.
+**4. Train and tune** — trained 10 baseline models (Logistic Regression, Decision Tree, Random Forest, SVM, MLP, XGBoost, LightGBM, CatBoost, AdaBoost, KNN), then tuned the best one (Random Forest) using RandomizedSearchCV with 80 iterations and 5-fold cross-validation optimizing for F1-macro. SMOTE is applied inside each fold via ImbPipeline so validation folds never see synthetic samples.
 
-**5. Tune the best ones** — RandomizedSearchCV with 80 iterations, 5-fold cross-validation, optimizing for F1-macro.
-
-**6. Build an ensemble** — top 3 tuned models combined via Soft Voting and Stacking.
-
-**7. Calibrate the Enrolled threshold** — the default 0.5 cutoff is too conservative for the smallest class. We sweep thresholds down and pick the one that maximizes Enrolled F1 without losing more than 0.01 on the overall F1-macro.
+**5. Calibrate the Enrolled threshold** — the default 0.5 cutoff is too conservative for the smallest class. We sweep thresholds down and pick the one that maximizes Enrolled F1 without losing more than 0.01 on overall F1-macro.
 
 ---
 
@@ -87,7 +82,7 @@ Because we care equally about all three classes. Weighted F1 would let a model i
 
 ## What we tried that didn't work
 
-**SMOTE oversampling** — cross-validation score looked great (0.82), test set collapsed (0.70). The synthetic samples leaked into validation folds and inflated the CV score. Scrapped entirely.
+**SMOTE before cross-validation** — applying SMOTE to the full training set before CV caused synthetic samples to leak into validation folds, inflating CV scores to ~0.82 while test performance sat at ~0.70. Fixed by moving SMOTE inside each fold using ImbPipeline.
 
 **Optuna Bayesian optimization** — smarter search, same ceiling. RF with Optuna scored 0.7248 vs 0.7267 with RandomizedSearch. The bottleneck is the data, not the optimizer.
 
@@ -98,34 +93,29 @@ Because we care equally about all three classes. Weighted F1 would let a model i
 ## Project structure
 
 ```
-├── Student_Dropout_Prediction.ipynb   # main notebook
-├── dataset.csv                        # raw data
-├── model.pkl                          # trained Random Forest
-├── scaler.pkl                         # fitted StandardScaler
-├── features.pkl                       # selected feature list
-├── threshold.pkl                      # calibrated Enrolled threshold
-└── streamlit_app.py                   # web app
+├── preprocess.py     # data cleaning, feature engineering, feature selection, scaling
+├── train.py          # tunes Random Forest, calibrates threshold, saves artifacts
+├── streamlit_app.py  # web app
+├── dataset.csv       # raw data
+├── model.pkl         # trained Random Forest
+├── scaler.pkl        # fitted StandardScaler
+├── features.pkl      # selected feature list
+└── threshold.pkl     # calibrated Enrolled threshold
 ```
 
 ---
 
-## Run the app
-
-First run the notebook end-to-end to generate the saved files, then:
+## Run locally
 
 ```bash
+pip install pandas numpy scikit-learn imbalanced-learn xgboost lightgbm catboost shap streamlit joblib
+
+python preprocess.py
+python train.py
 streamlit run streamlit_app.py
 ```
 
-The app takes a student's details as input and returns a prediction with confidence scores for all three classes.
-
----
-
-## Dependencies
-
-```bash
-pip install pandas numpy scikit-learn xgboost lightgbm catboost shap streamlit joblib
-```
+`preprocess.py` must run first — it generates the `preprocessed/` folder that `train.py` depends on.
 
 ---
 
