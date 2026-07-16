@@ -7,10 +7,6 @@
 
 - Ahmed Al-Shobaki 
   [Github](https://github.com/ahmedsh711)
-
-- Rodina Mohamed 
-  [Github](https://github.com/Rodina222)
-
 ---
 
 ## Live App
